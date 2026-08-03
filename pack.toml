@@ -1,0 +1,9 @@
+# mathcats — mathematical-reasoning worker pack (Gas City).
+#
+# This pack defines the mathcat worker type and its supporting formula/assets.
+# Subtask-specific files are added by follow-up beads; this bootstrap commit
+# only establishes the pack metadata and directory skeleton.
+
+[pack]
+name = "mathcats"
+schema = 2
