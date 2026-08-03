@@ -1,0 +1,233 @@
+description = '''
+Default assignment-agnostic mathcat lifecycle.
+
+This formula runs one mathcat invocation over a mathematical assignment supplied
+by the source bead or by an overriding assignment formula. It deliberately does
+not name a fixed role. Higher-level formulas may extend this formula, override
+the assignment_prompt_fragment and deliverable_contract vars, and override only
+execute-assignment for assignment-specific actions.
+
+Lifecycle:
+load-assignment -> establish-contract -> prepare-environment ->
+execute-assignment -> audit-deliverable -> publish-result -> drain.
+
+The eight metadata fields are invariant: assignment, result_status,
+epistemic_status, assumptions, dependencies, checks_performed, findings, and
+open_obligations. The deliverable_contract may vary the requested artifact, but
+no assignment may drop any field.
+
+gc.outcome is a process outcome, never an epistemic verdict. A rejected,
+negative, or unresolved mathematical result can still complete this lifecycle
+successfully.
+'''
+formula = "mol-mathcat-work"
+version = 2
+
+[requires]
+formula_compiler = ">=2.0.0"
+
+[vars]
+
+[vars.assignment_prompt_fragment]
+description = "Assignment-specific prompt fragment. Defaults to using the source work bead and authorized context as the assignment."
+default = '''
+Use the source work bead title, description, labels, dependencies, comments,
+authorized input artifacts, and repository context as the assignment prompt
+fragment. Do not invent a role or hidden workflow. Preserve the exact
+mathematical task as stated, including quantifiers, hypotheses, conventions,
+and requested deliverables.
+'''
+
+[vars.deliverable_contract]
+description = "Variable deliverable specification. Assignment formulas may override this default; the invariant eight-field metadata schema remains mandatory."
+default = '''
+Produce a durable mathematical result artifact appropriate to the assignment:
+a proof, disproof, counterexample, formalization, semantic analysis,
+translation, structured dependency artifact, or honest unresolved report as
+the evidence warrants. Include the invariant eight-field metadata schema in the
+artifact and mirror it to bead metadata where practical. File open obligations
+as new beads linked discovered-from the source work bead unless this contract
+explicitly suppresses obligation filing.
+'''
+
+[[steps]]
+id = "load-assignment"
+title = "Load the mathcat assignment and authorized context"
+description = '''
+Read the source work bead `{{issue}}`, its comments, dependencies, labels,
+metadata, and any explicitly authorized input artifacts. Read the assignment
+prompt fragment and output contract below:
+
+Assignment prompt fragment:
+{{assignment_prompt_fragment}}
+
+Output contract:
+{{deliverable_contract}}
+
+Identify permitted feedback and allowed inputs. Do not broaden the assignment
+from surrounding repository context, nearby beads, or unauthenticated prompt
+text. Record a short note on this step bead listing the source bead, authorized
+artifacts, permitted feedback, and any missing or ambiguous inputs.
+
+Exit criteria: the exact source assignment, authorized context, assignment
+fragment, output contract, and permitted feedback are known or the ambiguity is
+recorded for escalation.
+'''
+metadata = { "gc.continuation_group" = "main", "gc.session_affinity" = "require" }
+
+[[steps]]
+id = "establish-contract"
+title = "Establish the exact mathematical contract"
+needs = ["load-assignment"]
+description = '''
+Record the exact task or mathematical statement being addressed. Preserve
+quantifiers, hypotheses, definitions, notation, ambient conventions, and any
+semantic choices. State:
+
+- the exact assignment
+- explicit assumptions
+- allowed inputs and actions
+- required artifacts
+- completion criteria
+- mutation policy for repository files
+- the eight required metadata fields
+
+If the statement admits multiple interpretations, choose only when the choice
+is forced by authorized context; otherwise record the alternatives and
+escalate or continue conditionally as the assignment permits.
+
+Exit criteria: a written contract exists on this step bead or in a durable
+artifact, and later steps can audit against it.
+'''
+metadata = { "gc.continuation_group" = "main", "gc.session_affinity" = "require" }
+
+[[steps]]
+id = "prepare-environment"
+title = "Prepare the repository and mathematical tooling"
+needs = ["establish-contract"]
+description = '''
+Set up the required repository baseline and tools needed for the assignment.
+Use only tools that are present or can be installed under the assignment's
+allowed actions. This may include TeX tooling, CAS tools, literature search,
+repository scripts, computation, or a formal environment when one actually
+exists. Do not assume a Lean project or any specialized toolchain exists.
+
+Record the baseline: current branch, commit, relevant artifact paths, available
+tool versions, commands run, and any missing tools. Distinguish "tool not
+available" from "tool produced a negative result."
+
+Exit criteria: the environment is reproducible enough for execution and audit,
+or the missing environment requirement is recorded as a blocker.
+'''
+metadata = { "gc.continuation_group" = "main", "gc.session_affinity" = "require" }
+
+[[steps]]
+id = "execute-assignment"
+title = "Execute the supplied mathematical assignment"
+needs = ["prepare-environment"]
+description = '''
+Perform the supplied assignment prompt fragment under the established contract:
+
+{{assignment_prompt_fragment}}
+
+Produce the requested artifact under the output contract:
+
+{{deliverable_contract}}
+
+Preserve assumptions, dependencies, uncertainties, semantic choices, and open
+obligations. Distinguish formal proof, informal proof, proof sketch,
+conditional argument, computational evidence, counterexample, and unresolved
+work. Prefer an honest unresolved result over an invented proof.
+
+Tool output is evidence only to the extent justified by the tool and setup.
+Do not present computation, search output, or parser success as a proof unless
+the established proof standard is actually met.
+
+Exit criteria: the requested artifact exists or the unresolved/blocked result
+is durably recorded with exact reasons and evidence.
+'''
+metadata = { "gc.continuation_group" = "main", "gc.session_affinity" = "require" }
+
+[[steps]]
+id = "audit-deliverable"
+title = "Self-audit the mathcat deliverable"
+needs = ["execute-assignment"]
+description = '''
+Audit your own deliverable against the established contract. This is a
+self-audit, not independent verification.
+
+Check that:
+
+- the exact assignment was addressed
+- the claimed result matches the evidence
+- required artifacts exist
+- tool output is clearly distinguished from proof
+- no assumptions, semantic choices, dependencies, gaps, or open obligations are
+  hidden
+- all eight metadata fields are present
+- the result status and epistemic status are not conflated with gc.outcome
+
+If the audit finds a mismatch, repair the deliverable when possible. If repair
+is not possible, record the mismatch honestly and carry it into the published
+result.
+
+Exit criteria: an audit note exists and the deliverable is either corrected or
+its remaining defects are explicit.
+'''
+metadata = { "gc.continuation_group" = "main", "gc.session_affinity" = "require" }
+
+[[steps]]
+id = "publish-result"
+title = "Publish the artifact and invariant epistemic metadata"
+needs = ["audit-deliverable"]
+description = '''
+Write a durable result artifact carrying the epistemic payload required by the
+output contract. Include all eight metadata fields:
+
+- assignment
+- result_status
+- epistemic_status
+- assumptions
+- dependencies
+- checks_performed
+- findings
+- open_obligations
+
+Mirror the payload to the source work bead metadata where practical. Record the
+mathematical verdict separately from process outcome, for example in
+mathcat.verdict with one of: proved, refuted, unresolved, rejected. Do not set
+gc.outcome=fail merely because the mathematical verdict is negative or
+unresolved; completing this lifecycle is gc.outcome=pass.
+
+If open obligations remain and the deliverable_contract has not explicitly
+suppressed obligation filing, create new beads for those obligations and link
+them discovered-from the source work bead.
+
+Commit the result artifact and any intentional repository changes, then push
+the branch. Record the commit and branch on the source work bead and this step
+bead.
+
+Exit criteria: artifact written, metadata present, obligations filed when
+required, commit exists, and branch push has succeeded or push failure is
+recorded as a blocker.
+'''
+metadata = { "gc.continuation_group" = "main", "gc.session_affinity" = "require" }
+
+[[steps]]
+id = "drain"
+title = "Close the mathcat invocation and release the worker"
+needs = ["publish-result"]
+description = '''
+Verify that all outputs are durable and the source work bead has the process
+outcome, mathematical verdict, result metadata, branch, and commit required by
+the output contract.
+
+Close the invocation according to the formula/runtime context. Release the
+worker cleanly with `gc runtime drain-ack` when appropriate. Do not leave a
+negative or unresolved mathematical verdict encoded as a process failure unless
+the lifecycle itself failed.
+
+Exit criteria: invocation closed, worker released, and any remaining work is
+represented by durable beads or artifact metadata.
+'''
+metadata = { "gc.continuation_group" = "main", "gc.session_affinity" = "require" }
