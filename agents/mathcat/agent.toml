@@ -10,5 +10,5 @@ min_active_sessions = 0
 max_active_sessions = 1
 
 [option_defaults]
-model = "gpt-5.6-sol"
+model = "gpt-6.1-sol"
 effort = "xhigh"
